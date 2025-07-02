@@ -1,0 +1,119 @@
+{# 
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+#}
+# Generated agent configuration (YAML v2)
+# Edit provider.class or its kwargs to switch model providers.
+
+name: {{ pkg_name }}-agent
+system_prompt: "You are a helpful AI assistant."
+
+# -----------------------------------------------------------------------------
+# Provider configuration
+# -----------------------------------------------------------------------------
+# The CLI will import the model class specified in `provider.class` and use the
+# keyword-arguments under `provider.kwargs` verbatim.  Any key ending with
+# *_env is treated as an environment-variable placeholder and resolved at
+# runtime so secrets never live in source control.
+#
+# IMPORTANT: Only ONE provider should be active at a time!
+# To switch providers:
+#   1. Comment out the current `provider.class` and `provider.kwargs` lines
+#   2. Uncomment the desired provider section below
+#   3. Adjust the contents of `provider.kwargs` for that class
+#   4. Restart `agent dev` (or rebuild the container)
+#
+# A few ready-to-copy snippets are included below.
+# -----------------------------------------------------------------------------
+
+provider:
+  # --- Amazon Bedrock ---------------------------------------------------------
+  class: "strands.models.BedrockModel"
+  kwargs:
+    model_id: "{{ model_id }}"          # e.g. us.amazon.claude-3-sonnet-v1:0
+    region_name: "{{ region }}"          # aws region
+    temperature: {{ temperature }}
+    top_p: {{ top_p }}
+    max_tokens: {{ max_tokens }}
+
+  # --- Anthropic --------------------------------------------------------------
+  # class: "strands.models.anthropic.AnthropicModel"
+  # kwargs:
+  #   model_id: "claude-3-sonnet-20240229"
+  #   max_tokens: 1024
+  #   client_args:
+  #     api_key_env: ANTHROPIC_API_KEY        # pulled from env
+  #   params:
+  #     temperature: 0.7
+
+
+  # --- OpenAI -----------------------------------------------------------------
+  # class: "strands.models.openai.OpenAIModel"
+  # kwargs:
+  #   model: "gpt-4o-mini"
+  #   api_key_env: OPENAI_API_KEY
+  #   params:
+  #     temperature: 0.8
+  #     max_tokens: 1024
+
+  # --- LiteLLM (proxy) --------------------------------------------------------
+  # class: "strands.models.litellm.LiteLLMModel"
+  # kwargs:
+  #   model_id: "anthropic/claude-3-sonnet-20240229"
+  #   client_args:
+  #     api_key_env: LITELLM_API_KEY
+  #   params:
+  #     temperature: 0.7
+  #     max_tokens: 1000
+
+
+
+# -----------------------------------------------------------------------------
+# MCP (Model Context Protocol) Servers
+# -----------------------------------------------------------------------------
+# Configure external MCP servers to extend your agent's capabilities
+# Transport types: stdio, sse, streamable_http, http
+# 
+# Environment variables:
+# - Any key ending with '_env' will be resolved from environment variables
+# - The '_env' suffix is removed from the final key name
+#
+
+
+mcp_servers:
+  # Example 1: Local stdio server (most common)
+  # - name: aws_documentation
+  #   transport: stdio
+  #   command: ["uvx", "awslabs.aws-documentation-mcp-server@latest"]
+  #   env:
+  #     # Environment variable resolved at runtime
+  #     FASTMCP_LOG_LEVEL_env: MCP_LOG_LEVEL  # Reads from MCP_LOG_LEVEL env var
+  #     AWS_DOCUMENTATION_PARTITION: "aws"
+
+  # Simple test server
+  # - name: simple_test_server
+  #   transport: streamable_http
+  #   url: "http://localhost:8002/mcp"
+  #   headers:
+  #     User-Agent: "TestAgent/1.0"
+
+  # Bearer test server
+  # - name: bearer_test_server
+  #   transport: streamable_http
+  #   url: "http://localhost:8001/mcp-bearer"
+  #   auth:
+  #     type: bearer
+  #     token_env: TEST_BEARER_TOKEN
+  #   headers:
+  #     User-Agent: "TestAgent/1.0"
+
+  # API Key test server 
+  # - name: apikey_test_server
+  #   transport: streamable_http
+  #   url: "http://localhost:8001/mcp-apikey"
+  #   auth:
+  #     type: api_key
+  #     key_env: TEST_API_KEY
+  #     header: "X-API-Key"
+  #   headers:
+  #     User-Agent: "TestAgent/1.0"

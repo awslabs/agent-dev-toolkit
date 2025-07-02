@@ -1,0 +1,41 @@
+{# 
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+#}
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install FastAPI and Uvicorn for the standalone server
+RUN pip install --no-cache-dir fastapi uvicorn
+
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code and configuration
+COPY src/ ./src/
+COPY .agent.yaml .
+COPY container_entrypoint.py .
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV HOST=0.0.0.0
+ENV PORT=8000
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Use the container entrypoint which provides full dev server functionality
+CMD ["python", "container_entrypoint.py"] 

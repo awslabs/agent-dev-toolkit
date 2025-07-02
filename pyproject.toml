@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-dev-toolkit"
+version = "0.1.0"
+description = "Agent Development Toolkit for Strands"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache 2.0"}
+dependencies = [
+    "typer>=0.9.0",
+    "boto3>=1.28.0",
+    "python-dotenv>=1.0.0",
+    "fastapi>=0.68.0",
+    "uvicorn>=0.15.0",
+    "requests>=2.25.0",
+    "pyyaml>=6.0.0",
+    "jinja2>=3.0.0",
+    "strands-agents>=0.1.3",
+    "strands-agents-tools>=0.1.2"
+]
+
+[project.scripts]
+adt = "agentcli.cli:cli"
+
+[tool.setuptools]
+packages = ["agentcli", "agentcli.cli", "agentcli.templates", "agentcli.generators", "agentcli.environment", "agentcli.server", "agentcli.core"]
+
+[tool.setuptools.package-data]
+agentcli = ["*", "ui/**/*"]
+"agentcli.templates" = ["*.j2"]
+"agentcli.core" = ["*.j2", "*.py"]
+"agentcli.server" = ["*.py"]
+"agentcli.static" = ["**/*"]

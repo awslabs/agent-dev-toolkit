@@ -1,0 +1,259 @@
+{# 
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+#}
+"""
+MCP (Model Context Protocol) Integration
+Uses Strands' built-in MCP support.
+
+To use MCP tools:
+1. pip install mcp (uncomment in requirements.txt)
+2. Configure mcp_servers in .agent.yaml  
+3. Uncomment MCP lines in src/agent.py
+
+This module creates MCP clients using Strands' built-in MCPClient class.
+You can modify this file to customize MCP behavior for your specific needs.
+"""
+
+import os
+import logging
+from typing import List, Dict, Any
+from contextlib import ExitStack
+
+logger = logging.getLogger(__name__)
+
+# Strands built-in MCP support
+try:
+    from mcp import stdio_client, StdioServerParameters
+    from mcp.client.sse import sse_client
+    from strands.tools.mcp import MCPClient
+    MCP_AVAILABLE = True
+    
+    # Try to import streamable HTTP client (available in newer versions)
+    try:
+        from mcp.client.streamable_http import streamablehttp_client
+        STREAMABLE_HTTP_AVAILABLE = True
+    except ImportError:
+        STREAMABLE_HTTP_AVAILABLE = False
+        logger.info("Streamable HTTP transport not available. Update mcp package for latest features.")
+        
+except ImportError:
+    MCP_AVAILABLE = False
+    STREAMABLE_HTTP_AVAILABLE = False
+    logger.info("MCP not available. Install with: pip install mcp")
+
+def create_mcp_clients(mcp_config: List[Dict[str, Any]]) -> List[MCPClient]:
+    """Create MCP clients from configuration."""
+    if not MCP_AVAILABLE or not mcp_config:
+        return []
+    
+    clients = []
+    
+    for server_config in mcp_config:
+        try:
+            client = _create_single_client(server_config)
+            if client:
+                clients.append(client)
+        except Exception as e:
+            name = server_config.get('name', 'unknown')
+            logger.warning(f"Failed to create MCP client for {name}: {e}")
+    
+    return clients
+
+def _create_single_client(config: Dict[str, Any]) -> MCPClient:
+    """Create a single MCP client from config."""
+    name = config.get('name', 'unnamed')
+    transport_type = config.get('transport', 'stdio')  # Default to stdio
+    
+    if transport_type == 'stdio':
+        return _create_stdio_client(config)
+    elif transport_type == 'sse':
+        return _create_sse_client(config)
+    elif transport_type in ['streamable_http', 'http']:
+        return _create_streamable_http_client(config)
+    else:
+        available_transports = ['stdio', 'sse']
+        if STREAMABLE_HTTP_AVAILABLE:
+            available_transports.extend(['streamable_http', 'http'])
+        logger.warning(f"Unsupported transport type '{transport_type}' for {name}. Available: {', '.join(available_transports)}")
+        return None
+
+def _create_stdio_client(config: Dict[str, Any]) -> MCPClient:
+    """Create stdio MCP client."""
+    command = config.get('command', [])
+    env = config.get('env', {})
+    
+    if not command:
+        raise ValueError(f"No command specified for stdio server {config.get('name')}")
+    
+    # Resolve environment variables (same pattern as agent.py)
+    resolved_env = {}
+    for key, value in env.items():
+        if key.endswith('_env'):
+            env_var = os.getenv(value)
+            if env_var:
+                resolved_env[key[:-4]] = env_var
+            else:
+                logger.warning(f"Environment variable {value} not found")
+        else:
+            resolved_env[key] = value
+    
+    # Create the client using Strands' MCPClient
+    return MCPClient(lambda: stdio_client(
+        StdioServerParameters(
+            command=command[0],
+            args=command[1:] if len(command) > 1 else [],
+            env=resolved_env
+        )
+    ))
+
+def _create_sse_client(config: Dict[str, Any]) -> MCPClient:
+    """Create SSE MCP client."""
+    url = config.get('url')
+    if not url:
+        raise ValueError(f"No URL specified for SSE server {config.get('name')}")
+    
+    # Resolve HTTP configuration (headers, params, etc.)
+    http_config = _resolve_http_config(config)
+    
+    # Note: Current SSE client may not support custom headers
+    # This is a limitation of the current MCP SDK
+    if http_config.get('headers'):
+        logger.warning(f"SSE transport for {config.get('name')} may not support custom headers. Consider using streamable_http transport.")
+    
+    return MCPClient(lambda: sse_client(url))
+
+def _create_streamable_http_client(config: Dict[str, Any]) -> MCPClient:
+    """Create Streamable HTTP MCP client."""
+    if not STREAMABLE_HTTP_AVAILABLE:
+        raise ValueError("Streamable HTTP transport not available. Please update your mcp package.")
+    
+    url = config.get('url')
+    if not url:
+        raise ValueError(f"No URL specified for streamable HTTP server {config.get('name')}")
+    
+    # Resolve HTTP configuration
+    http_config = _resolve_http_config(config)
+    
+    # Create client with resolved configuration
+    return MCPClient(lambda: streamablehttp_client(
+        url,
+        headers=http_config.get('headers', {}),
+    ))
+
+def _resolve_http_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Resolve HTTP configuration including headers, params, and auth."""
+    resolved = {
+        'url': config.get('url'),
+        'headers': {},
+        'params': {}
+    }
+    
+    # Resolve headers
+    headers = config.get('headers', {})
+    resolved['headers'] = _resolve_env_dict(headers)
+    
+    # Resolve query parameters
+    params = config.get('params', {})
+    resolved['params'] = _resolve_env_dict(params)
+    
+    # Handle auth shortcuts (convenience methods)
+    auth = config.get('auth', {})
+    if auth:
+        auth_headers, auth_params = _resolve_auth_config(auth)
+        resolved['headers'].update(auth_headers)
+        resolved['params'].update(auth_params)
+    
+    return resolved
+
+def _resolve_env_dict(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Resolve environment variables in any dictionary."""
+    resolved = {}
+    for key, value in data.items():
+        if isinstance(value, str) and key.endswith('_env'):
+            env_var = os.getenv(value)
+            if env_var:
+                resolved[key[:-4]] = env_var  # Remove _env suffix
+            else:
+                logger.warning(f"Environment variable {value} not found")
+        elif isinstance(value, dict):
+            resolved[key] = _resolve_env_dict(value)
+        elif isinstance(value, list):
+            resolved[key] = [_resolve_env_dict(item) if isinstance(item, dict) else item for item in value]
+        else:
+            resolved[key] = value
+    return resolved
+
+def _resolve_auth_config(auth: Dict[str, Any]) -> tuple[Dict[str, str], Dict[str, str]]:
+    """Resolve auth configuration into headers and params."""
+    headers = {}
+    params = {}
+    
+    auth_type = auth.get('type', '').lower()
+    
+    if auth_type == 'bearer':
+        token_key = auth.get('token_env', 'BEARER_TOKEN')
+        token = os.getenv(token_key)
+        if token:
+            # Ensure Bearer prefix
+            if not token.startswith('Bearer '):
+                token = f"Bearer {token}"
+            headers['Authorization'] = token
+        else:
+            logger.warning(f"Bearer token environment variable {token_key} not found")
+    
+    elif auth_type == 'api_key':
+        key_env = auth.get('key_env', 'API_KEY')
+        api_key = os.getenv(key_env)
+        if api_key:
+            header_name = auth.get('header', 'X-API-Key')
+            headers[header_name] = api_key
+        else:
+            logger.warning(f"API key environment variable {key_env} not found")
+    
+    elif auth_type == 'basic':
+        username_env = auth.get('username_env', 'USERNAME')
+        password_env = auth.get('password_env', 'PASSWORD')
+        username = os.getenv(username_env)
+        password = os.getenv(password_env)
+        if username and password:
+            import base64
+            credentials = base64.b64encode(f"{username}:{password}".encode()).decode()
+            headers['Authorization'] = f"Basic {credentials}"
+        else:
+            logger.warning(f"Basic auth credentials not found in environment variables")
+    
+    return headers, params
+
+def get_mcp_tools_with_context(mcp_config: List[Dict[str, Any]]):
+    """
+    Get MCP tools using Strands' built-in support.
+    Returns (tools, context_manager) tuple.
+    
+    IMPORTANT: You must use the context manager to keep MCP connections alive!
+    """
+    if not MCP_AVAILABLE or not mcp_config:
+        return [], None
+    
+    clients = create_mcp_clients(mcp_config)
+    if not clients:
+        return [], None
+    
+    # Create a context manager that handles all clients
+    context_manager = ExitStack()
+    
+    # Enter all client contexts
+    for client in clients:
+        context_manager.enter_context(client)
+    
+    # Collect tools from all clients
+    tools = []
+    for client in clients:
+        try:
+            client_tools = client.list_tools_sync()
+            tools.extend(client_tools)
+            logger.info(f"Loaded {len(client_tools)} tools from MCP client")
+        except Exception as e:
+            logger.warning(f"Failed to get tools from MCP client: {e}")
+    
+    return tools, context_manager 

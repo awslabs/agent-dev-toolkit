@@ -1,0 +1,48 @@
+{# 
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+#}
+from strands import tool
+import re
+
+@tool
+def multiplicator(number1: str, number2: str) -> str:
+    """Multiply exactly two numbers together.
+    
+    This tool takes exactly 2 numbers and returns their product.
+    For multiple numbers, call this tool multiple times.
+    
+    Args:
+        number1: The first number to multiply (as string)
+        number2: The second number to multiply (as string)
+        
+    Returns:
+        str: The product of the two numbers
+    """
+    print(f"🔢 Multiplicator called with: {number1} × {number2}")
+    
+    try:
+        # Convert inputs to float to handle both integers and decimals
+        num1 = float(number1.strip())
+        num2 = float(number2.strip())
+        
+        # Calculate the product
+        result = num1 * num2
+        
+        # Format result nicely (remove .0 for whole numbers)
+        if result.is_integer():
+            result_str = str(int(result))
+        else:
+            result_str = str(result)
+        
+        print(f"✅ Multiplication result: {num1} × {num2} = {result_str}")
+        return result_str
+        
+    except ValueError as e:
+        error_msg = f"Error: Could not convert inputs to numbers. Got '{number1}' and '{number2}'"
+        print(f"❌ {error_msg}")
+        return error_msg
+    except Exception as e:
+        error_msg = f"Error during multiplication: {str(e)}"
+        print(f"❌ {error_msg}")
+        return error_msg 

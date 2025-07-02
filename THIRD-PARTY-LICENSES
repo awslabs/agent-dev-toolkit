@@ -1,0 +1,227 @@
+Agent Development Toolkit - Third-Party Software Licenses
+=====================================
+
+This document contains the licenses for third-party software included with AgentCLI.
+
+---
+
+Python Dependencies (Runtime)
+=============================
+
+typer (>= 0.9.0)
+License: MIT
+Copyright (c) 2019 Sebastián Ramírez
+https://github.com/tiangolo/typer
+
+boto3 (>= 1.28.0)
+License: Apache License 2.0
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+https://github.com/boto/boto3
+
+python-dotenv (>= 1.0.0)
+License: BSD-3-Clause
+Copyright (c) 2014, Saurabh Kumar
+https://github.com/theskumar/python-dotenv
+
+fastapi (>= 0.68.0)
+License: MIT
+Copyright (c) 2018 Sebastián Ramírez
+https://github.com/tiangolo/fastapi
+
+uvicorn (>= 0.15.0)
+License: BSD-3-Clause
+Copyright © 2017-present, Tom Christie. All rights reserved.
+https://github.com/encode/uvicorn
+
+requests (>= 2.25.0)
+License: Apache License 2.0
+Copyright 2019 Kenneth Reitz
+https://github.com/psf/requests
+
+pyyaml (>= 6.0.0)
+License: MIT
+Copyright (c) 2017-2021 Ingy döt Net
+Copyright (c) 2006-2016 Kirill Simonov
+https://github.com/yaml/pyyaml
+
+jinja2 (>= 3.0.0)
+License: BSD-3-Clause
+Copyright 2007 Pallets
+https://github.com/pallets/jinja
+
+strands-agents (>= 0.1.3)
+License: MIT
+https://github.com/strands-ai/strands-agents
+
+strands-agents-tools (>= 0.1.2)
+License: MIT
+https://github.com/strands-ai/strands-agents-tools
+
+---
+
+JavaScript/TypeScript Dependencies (UI)
+=======================================
+
+@radix-ui/react-select (^2.2.5)
+License: MIT
+Copyright (c) 2022 WorkOS
+https://github.com/radix-ui/primitives
+
+@radix-ui/react-separator (^1.1.7)
+License: MIT
+Copyright (c) 2022 WorkOS
+https://github.com/radix-ui/primitives
+
+@radix-ui/react-slider (^1.3.5)
+License: MIT
+Copyright (c) 2022 WorkOS
+https://github.com/radix-ui/primitives
+
+@radix-ui/react-slot (^1.2.3)
+License: MIT
+Copyright (c) 2022 WorkOS
+https://github.com/radix-ui/primitives
+
+@radix-ui/react-tabs (^1.1.12)
+License: MIT
+Copyright (c) 2022 WorkOS
+https://github.com/radix-ui/primitives
+
+@tailwindcss/typography (^0.5.10)
+License: MIT
+Copyright (c) Tailwind Labs, Inc.
+https://github.com/tailwindlabs/tailwindcss-typography
+
+autoprefixer (^10.0.1)
+License: MIT
+Copyright 2013 Andrey Sitnik <andrey@sitnik.ru>
+https://github.com/postcss/autoprefixer
+
+class-variance-authority (^0.7.1)
+License: Apache License 2.0
+Copyright (c) 2022 Joe Bell
+https://github.com/joe-bell/cva
+
+clsx (^2.0.0)
+License: MIT
+Copyright (c) Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)
+https://github.com/lukeed/clsx
+
+dompurify (^3.2.6)
+License: (MPL-2.0 OR Apache-2.0)
+Copyright (c) 2015 Mario Heiderich
+https://github.com/cure53/DOMPurify
+
+lucide-react (^0.294.0)
+License: ISC
+Copyright (c) 2022, Lucide Contributors
+https://github.com/lucide-icons/lucide
+
+mermaid (11.6.0)
+License: MIT
+Copyright (c) 2014-2015 Knut Sveidqvist
+https://github.com/mermaid-js/mermaid
+Note: Bundled as static file in agentcli/ui/public/mermaid.min.js
+
+next (15.1.6)
+License: MIT
+Copyright (c) 2016-present Vercel, Inc.
+https://github.com/vercel/next.js
+
+postcss (^8)
+License: MIT
+Copyright 2013 Andrey Sitnik <andrey@sitnik.ru>
+https://github.com/postcss/postcss
+
+prismjs (^1.29.0)
+License: MIT
+Copyright (c) 2012 Lea Verou
+https://github.com/PrismJS/prism
+
+react (^18)
+License: MIT
+Copyright (c) Meta Platforms, Inc. and affiliates.
+https://github.com/facebook/react
+
+react-dom (^18)
+License: MIT
+Copyright (c) Meta Platforms, Inc. and affiliates.
+https://github.com/facebook/react
+
+react-markdown (^9.0.1)
+License: MIT
+Copyright (c) 2015 Espen Hovlandsdal
+https://github.com/remarkjs/react-markdown
+
+remark-gfm (^4.0.0)
+License: MIT
+Copyright (c) 2020 Titus Wormer <tituswormer@gmail.com>
+https://github.com/remarkjs/remark-gfm
+
+tailwindcss (^3.3.0)
+License: MIT
+Copyright (c) Tailwind Labs, Inc.
+https://github.com/tailwindlabs/tailwindcss
+
+---
+
+Development Dependencies (JavaScript/TypeScript)
+===============================================
+
+@types/dompurify (^3.0.5)
+License: MIT
+Copyright (c) Microsoft Corporation
+https://github.com/DefinitelyTyped/DefinitelyTyped
+
+@types/node (^20)
+License: MIT
+Copyright (c) Microsoft Corporation
+https://github.com/DefinitelyTyped/DefinitelyTyped
+
+@types/react (^18)
+License: MIT
+Copyright (c) Microsoft Corporation
+https://github.com/DefinitelyTyped/DefinitelyTyped
+
+@types/react-dom (^18)
+License: MIT
+Copyright (c) Microsoft Corporation
+https://github.com/DefinitelyTyped/DefinitelyTyped
+
+@types/prismjs (^1.26.3)
+License: MIT
+Copyright (c) Microsoft Corporation
+https://github.com/DefinitelyTyped/DefinitelyTyped
+
+eslint (^8)
+License: MIT
+Copyright OpenJS Foundation and other contributors, <www.openjsf.org>
+https://github.com/eslint/eslint
+
+eslint-config-next (15.1.6)
+License: MIT
+Copyright (c) 2016-present Vercel, Inc.
+https://github.com/vercel/next.js
+
+typescript (^5)
+License: Apache License 2.0
+Copyright (c) Microsoft Corporation
+https://github.com/microsoft/TypeScript
+
+---
+
+License Compliance Notes
+========================
+
+This project has been configured to exclude Sharp image optimization library 
+and its dependencies which contain LGPL-3.0-or-later licenses that may not 
+be compatible with certain organizational policies.
+
+All included dependencies use permissive licenses including:
+- MIT License
+- Apache License 2.0  
+- BSD-3-Clause License
+- ISC License
+- Mozilla Public License 2.0
+
+---

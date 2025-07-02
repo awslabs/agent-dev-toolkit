@@ -1,0 +1,17 @@
+{# 
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+#}
+from strands import tool
+
+@tool
+def {{ tool_name }}(message: str) -> str:
+    """{{ tool_description }}
+    
+    Args:
+        message: The message to process
+        
+    Returns:
+        str: The processed message
+    """
+    return f"{{ tool_response_prefix }}: {message}" 

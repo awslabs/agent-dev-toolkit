@@ -1,0 +1,571 @@
+
+
+{# 
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
+Jinja2 template for generating agent server code in both local and container modes 
+#}
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+"""
+
+Template Variables:
+- mode: "local" or "container" 
+"""
+
+{% if mode == "container" %}
+#!/usr/bin/env python3
+"""
+Standalone container entrypoint for running Strands agents.
+This script creates a simple FastAPI server without any agentcli dependencies.
+
+Generated from agentcli/core/agent_server.py.j2 - DO NOT EDIT MANUALLY
+"""
+{% else %}
+"""
+Development server for testing Strands agents via HTTP endpoints.
+
+Generated from agentcli/core/agent_server.py.j2 - DO NOT EDIT MANUALLY
+"""
+{% endif %}
+
+import os
+import sys
+import uvicorn
+import importlib.util
+from pathlib import Path
+from fastapi import FastAPI, HTTPException{% if mode == "local" %}, Request{% endif %}
+from fastapi.middleware.cors import CORSMiddleware
+{% if mode == "local" %}
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+{% endif %}
+from pydantic import BaseModel
+
+{% if mode == "container" %}
+# Add the app directory to Python path
+sys.path.insert(0, '/app')
+sys.path.insert(0, '/app/src')
+{% endif %}
+
+{% if mode == "local" %}
+from .ui_assets import CHAT_UI_HTML
+from ..ui_builder import ui_builder
+
+# Settings handler removed: YAML is now the single source of truth
+{% endif %}
+
+# === GENERATED UTILITIES (from agentcli/core/) ===
+
+# response_utils.py
+{{ response_utils }}
+
+# trace_utils.py  
+{{ trace_utils }}
+
+{% if mode == "container" %}
+# settings_handler removed – YAML-only configuration
+{% endif %}
+
+# === END GENERATED UTILITIES ===
+
+class AgentRequest(BaseModel):
+    message: str
+
+{% if mode == "container" %}
+def load_agent():
+    """Load the agent from the agent.py file."""
+    agent_path = Path("/app/src/agent.py")
+    
+    print(f"🔍 Checking for agent file at: {agent_path}")
+    print(f"🔍 File exists: {agent_path.exists()}")
+    
+    if not agent_path.exists():
+        print(f"❌ Agent file not found at {agent_path}")
+        print(f"📂 Contents of /app/src: {list(Path('/app/src').iterdir()) if Path('/app/src').exists() else 'Directory not found'}")
+        raise ImportError(f"Agent file not found: {agent_path}")
+    
+    spec = importlib.util.spec_from_file_location("agent", agent_path)
+    if not spec or not spec.loader:
+        raise ImportError("Could not create module spec for agent")
+    
+    agent_module = importlib.util.module_from_spec(spec)
+    
+    try:
+        spec.loader.exec_module(agent_module)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise ImportError(f"Failed to execute agent module: {e}")
+    
+    agent = getattr(agent_module, "agent", None)
+    if not agent:
+        available_objects = [attr for attr in dir(agent_module) if not attr.startswith('_')]
+        raise ImportError(f"No 'agent' object found. Available objects: {available_objects}")
+    
+    print(f"✅ Successfully loaded agent: {type(agent)}")
+    return agent
+{% endif %}
+
+{% if mode == "local" %}
+def create_app(agent_path: Path, ui_dev: bool = False, container_backend_port: int = None) -> FastAPI:
+    """Create and configure the FastAPI application."""
+{% else %}
+def create_app():
+    """Create a standalone FastAPI app for the agent."""
+{% endif %}
+    app = FastAPI(
+        title="{% if mode == 'container' %}Strands Agent Server{% else %}Agent Development Server{% endif %}",
+        description="{% if mode == 'container' %}Containerized Strands agent server{% else %}Local development server for testing the agent{% endif %}",
+        version="{% if mode == 'container' %}1.0.0{% else %}0.1.0{% endif %}"
+    )
+    
+    # Enable CORS for development
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    {% if mode == "local" %}
+    # Setup UI serving
+    if ui_dev:
+        print("🚀 Starting UI in development mode...")
+        try:
+            ui_process = ui_builder.start_dev_server(3001)
+            print("✅ UI dev server started on http://localhost:3001")
+        except Exception as e:
+            print(f"❌ Failed to start UI dev server: {e}")
+            ui_dev = False
+    
+    if not ui_dev:
+        static_dir = ui_builder.get_static_dir()
+        if static_dir and static_dir.exists():
+            app.mount("/static", StaticFiles(directory=static_dir), name="static")
+        # Remove verbose UI serving messages
+    
+    # Container backend mode - proxy to containerized backend
+    if container_backend_port:
+        import requests
+        
+        # nosem: useless-inner-function
+        @app.get("/", response_class=HTMLResponse)
+        async def root():
+            if ui_dev:
+                return HTMLResponse('<script>window.location.href = "http://localhost:3001";</script>')
+            
+            static_dir = ui_builder.get_static_dir()
+            if static_dir and (static_dir / "index.html").exists():
+                with open(static_dir / "index.html", 'r') as f:
+                    return HTMLResponse(f.read())
+            else:
+                return CHAT_UI_HTML
+        
+        # nosem: useless-inner-function
+        @app.post("/chat")
+        async def chat_endpoint(request: Request):
+            try:
+                data = await request.json()
+                response = requests.post(
+                    f"http://localhost:{container_backend_port}/chat",
+                    json=data,
+                    timeout=30
+                )
+                return response.json()
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Backend error: {str(e)}")
+        
+        return app
+    
+    # Local agent mode - load and serve agent directly
+    if not agent_path or agent_path == Path("/dev/null"):
+        raise ImportError("No agent path provided")
+    
+    try:
+        # Add paths for agent import
+        agent_dir = str(agent_path.parent)
+        project_root = str(agent_path.parent.parent)
+        
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
+        if agent_dir not in sys.path:
+            sys.path.insert(0, agent_dir)
+            
+        # Import the agent module
+        spec = importlib.util.spec_from_file_location("agent", str(agent_path))
+        if not spec or not spec.loader:
+            raise ImportError("Could not load agent module")
+            
+        agent_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(agent_module)
+        
+        agent = getattr(agent_module, "agent", None)
+        if not agent:
+            raise ImportError("No 'agent' object found in the module")
+            
+        if isinstance(agent, str):
+            raise ImportError(f"Expected Agent instance, got string: {agent}")
+        
+        # nosem: useless-inner-function
+        @app.get("/", response_class=HTMLResponse)
+        async def root():
+            if ui_dev:
+                return HTMLResponse('<script>window.location.href = "http://localhost:3001";</script>')
+            
+            static_dir = ui_builder.get_static_dir()
+            if static_dir and (static_dir / "index.html").exists():
+                with open(static_dir / "index.html", 'r') as f:
+                    return HTMLResponse(f.read())
+            else:
+                return CHAT_UI_HTML
+        
+        # nosem: useless-inner-function
+        @app.post("/chat")
+        async def chat_endpoint(request: Request):
+            """Chat with the agent."""
+            try:
+                data = await request.json()
+                message = data.get("message", "")
+                
+                if not message:
+                    raise HTTPException(status_code=400, detail="Message is required")
+                
+                # Guard: drop any message objects that have an empty content list
+                try:
+                    if hasattr(agent, 'messages') and isinstance(agent.messages, list):
+                        agent.messages = [m for m in agent.messages if m.get('content')]
+                except Exception:
+                    # Fail-open: never block the request because of cleanup errors
+                    pass
+                
+                # Call agent directly (no per-request settings)
+                response = agent(message)
+                
+                # Extract response content
+                response_text = extract_response_text(response)
+                
+                # Extract trace data
+                if hasattr(response, '_is_temporary_agent') and response._is_temporary_agent:
+                    trace_data = extract_direct_metrics_from_response(response)
+                else:
+                    trace_data = extract_strands_trace_data(response, agent=agent)
+                
+                return {
+                    "response": response.message if hasattr(response, 'message') else str(response),
+                    "trace": trace_data
+                }
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        # nosem: useless-inner-function
+        @app.get("/health")
+        async def health_check():
+            agent_name = getattr(agent_module, '__name__', 'Agent').replace('_', ' ').title()
+            if hasattr(agent, 'name'):
+                agent_name = agent.name
+            elif hasattr(agent, '__class__'):
+                agent_name = agent.__class__.__name__
+            
+            return {
+                "status": "healthy",
+                "agent_name": agent_name,
+                "agent_path": str(agent_path)
+            }
+        
+        # nosem: useless-inner-function
+        @app.get("/info")
+        async def agent_info():
+            agent_name = "Agent"
+            if hasattr(agent, 'name'):
+                agent_name = agent.name
+            elif hasattr(agent, '__class__'):
+                agent_name = agent.__class__.__name__
+            
+            # Extract model info properly with error handling
+            model_info = "unknown"
+            if hasattr(agent, 'model') and agent.model:
+                model_obj = agent.model
+                try:
+                    if hasattr(model_obj, 'model_id'):
+                        model_info = str(model_obj.model_id)
+                    elif hasattr(model_obj, 'model'):
+                        model_info = str(model_obj.model)
+                    elif hasattr(model_obj, 'model_name'):
+                        model_info = str(model_obj.model_name)
+                    elif hasattr(model_obj, '_model_id'):
+                        model_info = str(model_obj._model_id)
+                    elif hasattr(model_obj, '__dict__') and 'model_id' in model_obj.__dict__:
+                        model_info = str(model_obj.__dict__['model_id'])
+                    else:
+                        try:
+                            class_name = model_obj.__class__.__name__
+                            if 'Bedrock' in class_name:
+                                model_info = "BedrockModel"
+                            elif 'Anthropic' in class_name:
+                                model_info = "AnthropicModel"
+                            elif 'OpenAI' in class_name:
+                                model_info = "OpenAIModel"
+                            else:
+                                model_info = class_name
+                        except (AttributeError, TypeError):
+                            model_info = "Unknown Model"
+                except (AttributeError, TypeError, ValueError):
+                    model_info = "Unknown Model"
+                        
+            return {
+                "name": agent_name,
+                "description": "Local development agent",
+                "model": model_info,
+                "system_prompt": getattr(agent, 'system_prompt', None)
+            }
+        
+        # nosem: useless-inner-function
+        @app.get("/config")
+        async def agent_config():
+            """Get the agent configuration from .agent.yaml."""
+            try:
+                # Look for .agent.yaml in the agent directory and parent directories
+                config_path = None
+                search_dir = agent_path.parent
+                
+                # Search up to 3 levels to find .agent.yaml
+                for _ in range(3):
+                    potential_config = search_dir / ".agent.yaml"
+                    if potential_config.exists():
+                        config_path = potential_config
+                        break
+                    search_dir = search_dir.parent
+                
+                if not config_path:
+                    raise HTTPException(status_code=404, detail="Agent configuration file (.agent.yaml) not found")
+                
+                # Read and return the YAML content as text
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config_content = f.read()
+                
+                return {
+                    "config_path": str(config_path),
+                    "content": config_content
+                }
+            except FileNotFoundError:
+                raise HTTPException(status_code=404, detail="Agent configuration file not found")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error reading configuration: {str(e)}")
+                
+        return app
+        
+    except ImportError as e:
+        raise ImportError(f"Could not import agent from {agent_path}: {e}")
+    except Exception as e:
+        raise Exception(f"Error setting up development server: {e}")
+    
+    {% else %}
+    # Container mode - load agent and create endpoints
+    try:
+        agent = load_agent()
+        
+        # nosem: useless-inner-function
+        @app.post("/chat")
+        async def chat_endpoint(request: AgentRequest):
+            """Chat with the agent."""
+            try:
+                message = request.message
+                
+                if not message:
+                    raise HTTPException(status_code=400, detail="Message is required")
+                
+                # Guard: drop any message objects that have an empty content list
+                try:
+                    if hasattr(agent, 'messages') and isinstance(agent.messages, list):
+                        agent.messages = [m for m in agent.messages if m.get('content')]
+                except Exception:
+                    # Fail-open: never block the request because of cleanup errors
+                    pass
+                
+                # Direct agent call
+                response = agent(message)
+                
+                # Extract response content
+                response_text = extract_response_text(response)
+                
+                # Extract trace data
+                if hasattr(response, '_is_temporary_agent') and response._is_temporary_agent:
+                    trace_data = extract_direct_metrics_from_response(response)
+                else:
+                    trace_data = extract_strands_trace_data(response, agent=agent)
+                
+                return {
+                    "response": response.message if hasattr(response, 'message') else str(response),
+                    "trace": trace_data
+                }
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                raise HTTPException(status_code=500, detail=str(e))
+                
+    except Exception as e:
+        print(f"❌ Failed to load agent: {e}")
+        
+        # nosem: useless-inner-function
+        @app.post("/chat")
+        async def chat_endpoint_error(request: AgentRequest):
+            raise HTTPException(status_code=500, detail=f"Agent failed to load: {str(e)}")
+        
+        agent = None
+    
+    # nosem: useless-inner-function
+    @app.get("/health")
+    async def health_check():
+        try:
+            if 'agent' in locals() and agent is not None:
+                return {
+                    "status": "healthy", 
+                    "mode": "container",
+                    "agent_loaded": True,
+                    "agent_type": str(type(agent))
+                }
+            else:
+                return {
+                    "status": "unhealthy", 
+                    "mode": "container",
+                    "error": "Agent failed to load"
+                }
+        except NameError:
+            return {
+                "status": "unhealthy", 
+                "mode": "container",
+                "error": "Agent variable not defined"
+            }
+    
+    # nosem: useless-inner-function
+    @app.get("/info")
+    async def agent_info():
+        try:
+            if 'agent' not in locals() or agent is None:
+                return {
+                    "error": "Agent failed to load",
+                    "description": "Containerized Strands agent (failed to initialize)",
+                    "status": "error"
+                }
+        except NameError:
+            return {
+                "error": "Agent failed to load",
+                "description": "Containerized Strands agent (failed to initialize)",
+                "status": "error"
+            }
+        
+        agent_name = "Agent"
+        if hasattr(agent, 'name'):
+            agent_name = agent.name
+        elif hasattr(agent, '__class__'):
+            agent_name = agent.__class__.__name__
+        
+        # Extract model info properly with error handling
+        model_info = "unknown"
+        if hasattr(agent, 'model') and agent.model:
+            model_obj = agent.model
+            try:
+                if hasattr(model_obj, 'model_id'):
+                    model_info = str(model_obj.model_id)
+                elif hasattr(model_obj, 'model'):
+                    model_info = str(model_obj.model)
+                elif hasattr(model_obj, 'model_name'):
+                    model_info = str(model_obj.model_name)
+                elif hasattr(model_obj, '_model_id'):
+                    model_info = str(model_obj._model_id)
+                elif hasattr(model_obj, '__dict__') and 'model_id' in model_obj.__dict__:
+                    model_info = str(model_obj.__dict__['model_id'])
+                else:
+                    try:
+                        class_name = model_obj.__class__.__name__
+                        if 'Bedrock' in class_name:
+                            model_info = "BedrockModel"
+                        elif 'Anthropic' in class_name:
+                            model_info = "AnthropicModel"
+                        elif 'OpenAI' in class_name:
+                            model_info = "OpenAIModel"
+                        else:
+                            model_info = class_name
+                    except (AttributeError, TypeError):
+                        model_info = "Unknown Model"
+            except (AttributeError, TypeError, ValueError):
+                model_info = "Unknown Model"
+                    
+        return {
+            "name": agent_name,
+            "description": "Containerized Strands agent",
+            "model": model_info,
+            "system_prompt": getattr(agent, 'system_prompt', None)
+        }
+    
+    # nosem: useless-inner-function
+    @app.get("/config")
+    async def agent_config():
+        """Get the agent configuration from .agent.yaml."""
+        try:
+            # In container mode, look for .agent.yaml in /app
+            config_path = Path("/app/.agent.yaml")
+            
+            if not config_path.exists():
+                raise HTTPException(status_code=404, detail="Agent configuration file (.agent.yaml) not found")
+            
+            # Read and return the YAML content as text
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config_content = f.read()
+            
+            return {
+                "config_path": str(config_path),
+                "content": config_content
+            }
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="Agent configuration file not found")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error reading configuration: {str(e)}")
+    
+    # nosem: useless-inner-function
+    @app.get("/")
+    async def root():
+        return {
+            "message": "Strands Agent Server (Container Mode)",
+            "version": "1.0.0",
+            "endpoints": {
+                "chat": "POST /chat",
+                "health": "GET /health", 
+                "info": "GET /info",
+                "config": "GET /config"
+            }
+        }
+    
+    return app
+    {% endif %}
+
+{% if mode == "container" %}
+def main():
+    """Main entrypoint for containerized agent server."""
+    
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    
+    print(f"🐳 Starting Strands Agent Server on {host}:{port}")
+    
+    try:
+        app = create_app()
+        print(f"✅ App created successfully")
+        print(f"🌐 Server available at http://localhost:{port}")
+        
+        uvicorn.run(app, host=host, port=port)
+    except Exception as e:
+        print(f"❌ Failed to start server: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main() 
+{% endif %} 
