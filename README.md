@@ -41,7 +41,7 @@ ADT (Agent Development Toolkit) is a development tool that works with the [Stran
 - Generates complete agent project directories
 - Provides templates for agent configuration and tool development  
 - Runs a local web server with chat interface to test agent locally
-- Auto-discovers tools in the project for custom tool via tools directory
+- Auto-discovers tools in the project for custom tools via tools directory
 - Integrates with Model Context Protocol servers
 
 
