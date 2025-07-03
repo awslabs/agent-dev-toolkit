@@ -1,8 +1,8 @@
-# Agent Development Toolkit (ADT) For Strands Documentation
+# Agent Development Toolkit (ADT) For Strands
 
-**A development tool for building AI agents with the Strands platform**
+**A development tool for building Generative AI agents with the Strands platform**
 
-ADT provides a single command-line interface that lets developers build, test, and iterate on Strands agents with the same ease as modern web frameworks. The CLI unifies agent execution, observability, UI, and containerization into one cohesive developer experience.
+ADT provides a single command-line interface that lets developers build, test, and iterate on [Strands agents](https://github.com/strands-agents/sdk-python) with ease during local development. The CLI unifies agent execution, observability, UI, and local containerization into one cohesive developer experience, enabling developers to iterate and experiment faster with immediate feedback loops and streamlined workflows.
 
 ---
 
@@ -21,9 +21,8 @@ ADT provides a single command-line interface that lets developers build, test, a
 11. [Model Context Protocol (MCP) Integration](#model-context-protocol-mcp-integration)
 12. [UI and Observability](#ui-and-observability)
 13. [Docker and Container Mode](#docker-and-container-mode)
-14. [Advanced Features](#advanced-features)
-15. [Troubleshooting](#troubleshooting)
-16. [Reference](#reference)
+14. [Troubleshooting](#troubleshooting)
+15. [Command Reference](#reference)
 
 ---
 
