@@ -50,6 +50,20 @@ ADT (Agent Development Toolkit) is a development tool that works with the [Stran
 ## Quick Start
 
 ```bash
+# Create virtual environment:
+python -m venv .venv 
+
+# Activate virtual environment
+
+# macOS / Linux: 
+source .venv/bin/activate
+
+# Windows (CMD): 
+.venv\Scripts\activate.bat
+
+# Windows (PowerShell): 
+.venv\Scripts\Activate.ps1
+
 # Install ADT
 pip install git+https://github.com/awslabs/agent-dev-toolkit.git
 
@@ -121,6 +135,8 @@ adt --help
 ---
 
 ## Creating Your First Agent
+
+> Create virtual environment and install adt before you execute the following steps. See quickstart.
 
 ### Step 1: Generate Project
 
