@@ -169,17 +169,13 @@ provider:
     temperature: 0.7
 ```
 
-### Step 3: Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Step 4: Start Development Server
+### Step 3: Start Development Server
 
 ```bash
 adt dev --port 8083
 ```
+
+> Note: If you are using a different virtual environment from the one used to install ADT, you may have to run pip install -r requirements.txt from your project folder.
 
 The UI will build automatically on first run and be available at http://localhost:8083.
 
