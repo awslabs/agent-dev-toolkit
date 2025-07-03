@@ -33,7 +33,7 @@ import os, importlib, yaml
 from pathlib import Path
 
 from strands import Agent
-from strands.telemetry.tracer import get_tracer
+
 
 # Built-in tools from strands_tools (uncomment the ones you want to use)
 # from strands_tools import calculator      # Mathematical calculations
@@ -63,7 +63,7 @@ os.environ["STRANDS_OTEL_ENABLE_CONSOLE_EXPORT"] = "true"
 # call with `interactive=True`).  See User Guide §8.1 for details.
 # os.environ["PYTHON_REPL_INTERACTIVE"] = "false"
 
-tracer = get_tracer(service_name="my-agent-service", enable_console_export=True)
+
 
 
 def _resolve_env(obj):
