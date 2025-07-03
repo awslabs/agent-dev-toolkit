@@ -52,7 +52,7 @@ ADT (Agent Development Toolkit) is a development tool that works with the [Stran
 
 ```bash
 # Install ADT
-pip install git+ssh://git@ssh.gitlab.aws.dev/awind/strands-agent-cli.git # TODO: Change
+pip install git+https://github.com/awslabs/agent-dev-toolkit.git
 
 # Create an agent project
 adt init my-agent
@@ -82,13 +82,13 @@ Agent chat playground will be available at http://localhost:8083.
 
 **Option 1: From GitLab (Recommended)**
 ```bash
-pip install git+ssh://git@ssh.gitlab.aws.dev/awind/strands-agent-cli.git # TODO: Change
+pip install git+https://github.com/awslabs/agent-dev-toolkit.git
 ```
 
 **Option 2: Clone repo**
 ```bash
-git clone git@ssh.gitlab.aws.dev:awind/strands-agent-cli.git #TODO change
-cd strands-agent-cli #TODO change
+git clone https://github.com/awslabs/agent-dev-toolkit.git
+cd agent-dev-toolkit
 pip install -e .
 ```
 
@@ -337,7 +337,7 @@ def weather_checker(location: str) -> str:
     Returns:
         str: Weather information for the location
     """
-    # TODO: Implement weather checking functionality
+    # Implement weather checking functionality
     return f"Weather checker called for: {location}"
 ```
 
@@ -624,8 +624,8 @@ adt add tool <tool_name>          # Generate tool template
 
 - **Command help:** `adt --help`
 - **Command-specific help:** `adt dev --help`
-- **Issues:** [GitHub Issues](https://github.com/yourusername/agents-cli/issues) # TODO: change
-- **Strands Documentation:** [aws/strands-agents](https://github.com/aws/strands-agents) # TODO: Change
+- **Issues:** [GitHub Issues](https://github.com/awslabs/agent-dev-toolkit/issues)
+- **Strands Documentation:** [strands-agents](https://github.com/strands-agents/sdk-python)
 
 ---
 
