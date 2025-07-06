@@ -316,7 +316,7 @@ export default function ChatInterface() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm font-medium">
-                      {message.role === 'user' ? 'You' : agentInfo.name}
+                      {message.role === 'user' ? 'User' : 'Agent'}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {message.timestamp.toLocaleTimeString()}
