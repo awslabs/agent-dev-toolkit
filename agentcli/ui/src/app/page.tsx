@@ -393,7 +393,7 @@ export default function ChatInterface() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium">{agentInfo.name}</span>
+                    <span className="text-sm font-medium">Agent</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -425,7 +425,7 @@ export default function ChatInterface() {
                   onChange={(e) => setInput(e.target.value)}
                   ref={inputRef}
                   onKeyDown={handleKeyPress}
-                  placeholder={`Send a message to ${agentInfo.name}...`}
+                  placeholder={`Send a message...`}
                   disabled={isLoading}
                   className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                 />
