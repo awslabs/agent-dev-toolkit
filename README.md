@@ -436,7 +436,7 @@ def create_agent():
 ```yaml
 - name: file_server
   transport: stdio
-  command: ["uvx", "example-mcp-server@latest"]
+  command: ["uvx", "INSERT SERVER DETAILS HERE"]
 ```
 
 **Streamable HTTP transport** 
